@@ -1,0 +1,23 @@
+digraph g{
+	ranksep=0.6
+
+	node[shape=box3d, width=2.0 height=0.6 fontname="Arial"]
+
+	superdns_ctl[shape=box label="superdns-ctl"]
+	k8s_api[label="k8s-api-server"]
+	superdns[label="superdns"]
+	superdns_files[shape=note label="superdns domain files"]
+
+	app[shape=record label="app"]
+	app_c[shape=record label="{superdns-c|app}"]
+	app_go[shape=record label="{superdns-go|app}"]
+	app_java[shape=record label="{superdns-java|app}"]
+
+	{rank=same; app; app_c; app_go; app_java}
+
+	superdns_ctl->k8s_api
+	k8s_api->superdns[label="watch" dir="back"]
+	superdns->superdns_files
+	superdns:e->app[label="dns" dir="back" constraint=false]
+	superdns_files->{app_c, app_go, app_java}
+}

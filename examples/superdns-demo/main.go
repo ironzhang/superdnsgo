@@ -1,12 +1,3 @@
-# superdnsgo
-
-## 1. Overview
-
-superdnsgo is a Go client for superdns, it supports service discovery like dns and dynamic configuration.
-
-## 2. Quick Start
-
-```
 package main
 
 import (
@@ -30,5 +21,3 @@ func main() {
 	}
 	fmt.Printf("cluster=%s, endpoint=%v\n", cluster, endpoint)
 }
-```
-

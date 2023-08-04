@@ -51,6 +51,10 @@ func setLogLevel(s string) {
 }
 
 func parseTags(s string) (map[string]string, error) {
+	if s == "" {
+		return nil, nil
+	}
+
 	m := make(map[string]string)
 	tags := strings.Split(s, ",")
 	for _, tag := range tags {

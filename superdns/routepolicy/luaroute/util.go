@@ -21,7 +21,6 @@ func makeClusterTable(ls *lua.LState, c model.Cluster) *lua.LTable {
 	lt.RawSetString("Name", lua.LString(c.Name))
 	lt.RawSetString("Features", makeMapTable(ls, c.Features))
 	lt.RawSetString("EndpointNum", lua.LNumber(len(c.Endpoints)))
-	lt.RawSetString("AvailableEndpointNum", lua.LNumber(c.AvailableEndpointNum))
 	return lt
 }
 

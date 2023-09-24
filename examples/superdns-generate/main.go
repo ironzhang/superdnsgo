@@ -7,17 +7,18 @@ import (
 
 	"github.com/ironzhang/tlog"
 
+	"github.com/ironzhang/superlib/fileutil"
+	"github.com/ironzhang/superlib/superutil/parameter"
+
 	"github.com/ironzhang/superdnsgo"
 	"github.com/ironzhang/superdnsgo/pkg/model"
-	"github.com/ironzhang/superdnsgo/pkg/parameter"
-	"github.com/ironzhang/superdnsgo/pkg/superutil"
 	"github.com/ironzhang/superdnsgo/superdns"
 )
 
 func writeJSON(filename string, v interface{}) error {
 	dir := filepath.Dir(filename)
 	os.MkdirAll(dir, os.ModePerm)
-	return superutil.WriteJSON(filename, v)
+	return fileutil.WriteJSON(filename, v)
 }
 
 func writeFile(filename string, data string) error {
@@ -34,7 +35,7 @@ func writeSuperdnsCfg() {
 	}
 
 	path := "superdns.conf"
-	err := superutil.WriteTOML(path, param)
+	err := fileutil.WriteTOML(path, param)
 	if err != nil {
 		tlog.Errorw("write toml", "path", path, "error", err)
 		return
@@ -57,7 +58,6 @@ func writeServiceModel() {
 					{Addr: "192.168.1.1:8000", State: model.Enabled, Weight: 100},
 					{Addr: "192.168.1.2:8000", State: model.Enabled, Weight: 100},
 				},
-				AvailableEndpointNum: 2,
 			},
 			"hnb": model.Cluster{
 				Name: "hnb",
@@ -70,7 +70,6 @@ func writeServiceModel() {
 					{Addr: "192.168.2.1:8000", State: model.Enabled, Weight: 100},
 					{Addr: "192.168.2.2:8000", State: model.Enabled, Weight: 100},
 				},
-				AvailableEndpointNum: 2,
 			},
 			"hba@vip": model.Cluster{
 				Name: "hba@vip",
@@ -82,7 +81,6 @@ func writeServiceModel() {
 				Endpoints: []model.Endpoint{
 					{Addr: "127.0.0.1:8000", State: model.Enabled, Weight: 100},
 				},
-				AvailableEndpointNum: 1,
 			},
 			"default@mock": model.Cluster{
 				Name: "default@mock",
@@ -94,7 +92,6 @@ func writeServiceModel() {
 				Endpoints: []model.Endpoint{
 					{Addr: "mock.endpoint.com:8000", State: model.Enabled, Weight: 100},
 				},
-				AvailableEndpointNum: 1,
 			},
 		},
 	}

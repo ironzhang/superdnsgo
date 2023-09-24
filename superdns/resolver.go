@@ -8,10 +8,11 @@ import (
 
 	"github.com/ironzhang/tlog"
 
-	"github.com/ironzhang/superdnsgo/pkg/filewatch"
+	"github.com/ironzhang/superlib/fileutil"
+	"github.com/ironzhang/superlib/filewatch"
+	"github.com/ironzhang/superlib/superutil/parameter"
+
 	"github.com/ironzhang/superdnsgo/pkg/model"
-	"github.com/ironzhang/superdnsgo/pkg/parameter"
-	"github.com/ironzhang/superdnsgo/pkg/superutil"
 	"github.com/ironzhang/superdnsgo/superdns/lb"
 	"github.com/ironzhang/superdnsgo/superdns/routepolicy"
 )
@@ -238,7 +239,7 @@ func (r *resolver) loadProvider(ctx context.Context, domain string) *provider {
 	// 订阅服务文件
 	r.watcher.WatchFile(ctx, r.serviceFilePath(domain), func(path string) bool {
 		var m model.ServiceModel
-		err := superutil.ReadJSON(path, &m)
+		err := fileutil.ReadJSON(path, &m)
 		if err != nil {
 			return false
 		}
@@ -249,7 +250,7 @@ func (r *resolver) loadProvider(ctx context.Context, domain string) *provider {
 	// 订阅路由文件
 	r.watcher.WatchFile(ctx, r.routeFilePath(domain), func(path string) bool {
 		var m model.RouteModel
-		err := superutil.ReadJSON(path, &m)
+		err := fileutil.ReadJSON(path, &m)
 		if err != nil {
 			return false
 		}

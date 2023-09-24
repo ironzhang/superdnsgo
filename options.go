@@ -3,7 +3,8 @@ package superdnsgo
 import (
 	"fmt"
 
-	"github.com/ironzhang/superdnsgo/pkg/superutil"
+	"github.com/ironzhang/superlib/fileutil"
+
 	"github.com/ironzhang/superdnsgo/superdns"
 	"github.com/ironzhang/superdnsgo/superdns/lb"
 )
@@ -61,8 +62,8 @@ func (p *Options) setupDefaults() (err error) {
 func readZone() (*superdns.Zone, error) {
 	var zone superdns.Zone
 	const path = "superoptions/zone.json"
-	if superutil.FileExist(path) {
-		err := superutil.ReadJSON(path, &zone)
+	if fileutil.FileExist(path) {
+		err := fileutil.ReadJSON(path, &zone)
 		if err != nil {
 			return nil, err
 		}
@@ -73,8 +74,8 @@ func readZone() (*superdns.Zone, error) {
 func readMisc() (*Misc, error) {
 	var misc Misc
 	const path = "superoptions/misc.json"
-	if superutil.FileExist(path) {
-		err := superutil.ReadJSON(path, &misc)
+	if fileutil.FileExist(path) {
+		err := fileutil.ReadJSON(path, &misc)
 		if err != nil {
 			return nil, err
 		}
@@ -84,8 +85,8 @@ func readMisc() (*Misc, error) {
 
 func readPreloadDomains() (domains []string, err error) {
 	const path = "superoptions/preload.json"
-	if superutil.FileExist(path) {
-		err = superutil.ReadJSON(path, &domains)
+	if fileutil.FileExist(path) {
+		err = fileutil.ReadJSON(path, &domains)
 		if err != nil {
 			return nil, err
 		}

@@ -46,8 +46,7 @@ func TestPolicy(t *testing.T) {
 				"Region":      "default_region",
 				"Environment": "product",
 			},
-			Endpoints:            make([]model.Endpoint, 10),
-			AvailableEndpointNum: 10,
+			Endpoints: make([]model.Endpoint, 10),
 		},
 		"hna-v": model.Cluster{
 			Name: "hna-v",
@@ -56,8 +55,7 @@ func TestPolicy(t *testing.T) {
 				"Region":      "hn",
 				"Environment": "product",
 			},
-			Endpoints:            make([]model.Endpoint, 10),
-			AvailableEndpointNum: 10,
+			Endpoints: make([]model.Endpoint, 10),
 		},
 		"hnb-v": model.Cluster{
 			Name: "hnb-v",
@@ -66,8 +64,7 @@ func TestPolicy(t *testing.T) {
 				"Region":      "hn",
 				"Environment": "product",
 			},
-			Endpoints:            make([]model.Endpoint, 10),
-			AvailableEndpointNum: 10,
+			Endpoints: make([]model.Endpoint, 10),
 		},
 		"hbf-v": model.Cluster{
 			Name: "hbf-v",
@@ -76,8 +73,7 @@ func TestPolicy(t *testing.T) {
 				"Region":      "hb",
 				"Environment": "product",
 			},
-			Endpoints:            make([]model.Endpoint, 10),
-			AvailableEndpointNum: 10,
+			Endpoints: make([]model.Endpoint, 10),
 		},
 		"hna-sim000-v": model.Cluster{
 			Name: "hna-sim000-v",
@@ -86,8 +82,7 @@ func TestPolicy(t *testing.T) {
 				"Region":      "hn",
 				"Environment": "sim",
 			},
-			Endpoints:            make([]model.Endpoint, 10),
-			AvailableEndpointNum: 10,
+			Endpoints: make([]model.Endpoint, 10),
 		},
 		"hna-sim001-v": model.Cluster{
 			Name: "hna-sim001-v",
@@ -96,8 +91,7 @@ func TestPolicy(t *testing.T) {
 				"Region":      "hn",
 				"Environment": "sim",
 			},
-			Endpoints:            make([]model.Endpoint, 10),
-			AvailableEndpointNum: 0,
+			Endpoints: make([]model.Endpoint, 10),
 		},
 		"hna-sim002-v": model.Cluster{
 			Name: "hna-sim002-v",
@@ -106,8 +100,7 @@ func TestPolicy(t *testing.T) {
 				"Region":      "hn",
 				"Environment": "sim",
 			},
-			Endpoints:            make([]model.Endpoint, 10),
-			AvailableEndpointNum: 8,
+			Endpoints: make([]model.Endpoint, 10),
 		},
 	}
 

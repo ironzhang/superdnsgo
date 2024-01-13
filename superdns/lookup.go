@@ -16,34 +16,19 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func pick(dests []model.Destination) (cluster string, err error) {
-	sum := 0.0
-	p := rand.Float64()
-	for _, dest := range dests {
-		sum += dest.Percent
-		if p < sum {
-			return dest.Cluster, nil
-		}
-	}
-	if len(dests) > 0 {
-		return dests[0].Cluster, nil
-	}
-	return "", ErrInvalidDestinations
-}
-
-func mergeZoneTags(srcTags map[string]string, zoneTags map[string]string) map[string]string {
+func mergeTags(srcTags map[string]string, dstTags map[string]string) map[string]string {
 	if len(srcTags) <= 0 {
-		return zoneTags
+		return dstTags
 	}
-	if len(zoneTags) <= 0 {
+	if len(dstTags) <= 0 {
 		return srcTags
 	}
 
-	m := make(map[string]string, len(srcTags)+len(zoneTags))
-	for k, v := range zoneTags {
+	m := make(map[string]string, len(srcTags)+len(dstTags))
+	for k, v := range srcTags {
 		m[k] = v
 	}
-	for k, v := range srcTags {
+	for k, v := range dstTags {
 		m[k] = v
 	}
 	return m
@@ -53,11 +38,20 @@ type lookuper struct {
 	service *model.ServiceModel
 	route   *model.RouteModel
 	policy  *routepolicy.Policy
+	tags    map[string]string
 }
 
-func (p *lookuper) MatchByRoutePolicy(ctx context.Context, domain string, zone Zone, tags map[string]string) []model.Destination {
-	tags = mergeZoneTags(tags, zone.RouteTags)
-	dests, err := p.policy.MatchRoute(domain, tags, p.service.Clusters)
+func (p *lookuper) MakeClusterMap() map[string]model.Cluster {
+	m := make(map[string]model.Cluster, len(p.service.Clusters))
+	for _, c := range p.service.Clusters {
+		m[c.Name] = c
+	}
+	return m
+}
+
+func (p *lookuper) MatchRouteScript(ctx context.Context, domain string, tags map[string]string, clusters map[string]model.Cluster) []model.Destination {
+	tags = mergeTags(p.tags, tags)
+	dests, err := p.policy.MatchRoute(domain, tags, clusters)
 	if err != nil {
 		tlog.Named("superdns").WithContext(ctx).Warnw("policy match route", "domain", domain, "tags", tags, "error", err)
 		return nil
@@ -65,36 +59,9 @@ func (p *lookuper) MatchByRoutePolicy(ctx context.Context, domain string, zone Z
 	return dests
 }
 
-func (p *lookuper) MatchByRouteRule(ctx context.Context, domain string, zone Zone, tags map[string]string, rule model.RouteRule) []model.Destination {
-	var dests []model.Destination
-	if p.route.Strategy.EnableScriptRoute || rule.EnableScriptRoute {
-		dests = p.MatchByRoutePolicy(ctx, domain, zone, tags)
-		if len(dests) > 0 {
-			return dests
-		}
-	}
-	dests = rule.LidcDestinations[zone.Lidc]
-	if len(dests) > 0 {
-		return dests
-	}
-	dests = rule.RegionDestinations[zone.Region]
-	if len(dests) > 0 {
-		return dests
-	}
-	if len(rule.EnvironmentDestinations) > 0 {
-		return rule.EnvironmentDestinations
-	}
-	return p.route.Strategy.DefaultDestinations
-}
-
-func (p *lookuper) MatchRoute(ctx context.Context, domain string, zone Zone, tags map[string]string) []model.Destination {
-	rule, ok := p.route.Strategy.RouteRules[zone.Environment]
-	if ok {
-		return p.MatchByRouteRule(ctx, domain, zone, tags, rule)
-	}
-
-	if p.route.Strategy.EnableScriptRoute {
-		dests := p.MatchByRoutePolicy(ctx, domain, zone, tags)
+func (p *lookuper) MatchRoute(ctx context.Context, domain string, tags map[string]string, clusters map[string]model.Cluster) []model.Destination {
+	if p.route.Strategy.EnableScript {
+		dests := p.MatchRouteScript(ctx, domain, tags, clusters)
 		if len(dests) > 0 {
 			return dests
 		}
@@ -102,13 +69,32 @@ func (p *lookuper) MatchRoute(ctx context.Context, domain string, zone Zone, tag
 	return p.route.Strategy.DefaultDestinations
 }
 
-func (p *lookuper) Lookup(ctx context.Context, domain string, zone Zone, tags map[string]string) (model.Cluster, error) {
-	dests := p.MatchRoute(ctx, domain, zone, tags)
-	cname, err := pick(dests)
+func (p *lookuper) Pick(dests []model.Destination) (cluster string, err error) {
+	sum := 0.0
+	r := rand.Float64()
+	for _, dest := range dests {
+		sum += dest.Percent
+		if r < sum {
+			return dest.Cluster, nil
+		}
+	}
+	if len(dests) > 0 {
+		return dests[0].Cluster, nil
+	}
+	if len(p.service.Clusters) > 0 {
+		return p.service.Clusters[0].Name, nil
+	}
+	return "", ErrNoAvalibaleCluster
+}
+
+func (p *lookuper) Lookup(ctx context.Context, domain string, tags map[string]string) (model.Cluster, error) {
+	clusters := p.MakeClusterMap()
+	dests := p.MatchRoute(ctx, domain, tags, clusters)
+	cname, err := p.Pick(dests)
 	if err != nil {
-		return model.Cluster{}, fmt.Errorf("%s domain can not match route: %w", domain, err)
+		return model.Cluster{}, fmt.Errorf("%s domain can not pick cluster: %w", domain, err)
 	}
-	c, ok := p.service.Clusters[cname]
+	c, ok := clusters[cname]
 	if !ok {
 		return model.Cluster{}, fmt.Errorf("%s domain can not find %s cluster: %w", domain, cname, ErrClusterNotFound)
 	}

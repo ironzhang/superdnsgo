@@ -27,5 +27,8 @@ func (p *provider) StoreRouteModel(r *model.RouteModel) {
 
 func (p *provider) LoadRouteModel() (*model.RouteModel, bool) {
 	r, ok := p.route.Load().(*model.RouteModel)
+	if !ok {
+		return &model.RouteModel{Domain: p.domain}, true
+	}
 	return r, ok
 }

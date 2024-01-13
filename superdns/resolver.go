@@ -17,14 +17,6 @@ import (
 	"github.com/ironzhang/superdnsgo/superdns/routepolicy"
 )
 
-// Zone 分区信息
-type Zone struct {
-	Environment string            // 环境
-	Region      string            // 地域
-	Lidc        string            // 逻辑机房
-	RouteTags   map[string]string // 路由标签
-}
-
 // LoadBalancer 负载均衡器接口
 type LoadBalancer interface {
 	Pickup(domain, cluster string, endpoints []model.Endpoint) (model.Endpoint, error)
@@ -32,27 +24,12 @@ type LoadBalancer interface {
 
 // Resolver 服务发现解析程序
 type Resolver struct {
-	Zone             Zone         // 分区信息
-	LoadBalancer     LoadBalancer // 负载均衡器
-	SkipPreloadError bool         // 忽略预加载错误
+	Tags             map[string]string // 路由标签
+	LoadBalancer     LoadBalancer      // 负载均衡器
+	SkipPreloadError bool              // 忽略预加载错误
 
 	once     sync.Once
 	resolver *resolver
-}
-
-func setupZone(zone *Zone) {
-	if zone.RouteTags == nil {
-		zone.RouteTags = make(map[string]string)
-	}
-	if zone.Environment != "" {
-		zone.RouteTags["Environment"] = zone.Environment
-	}
-	if zone.Region != "" {
-		zone.RouteTags["Region"] = zone.Region
-	}
-	if zone.Lidc != "" {
-		zone.RouteTags["Lidc"] = zone.Lidc
-	}
 }
 
 func (r *Resolver) init() {
@@ -60,20 +37,18 @@ func (r *Resolver) init() {
 		return
 	}
 
-	setupZone(&r.Zone)
-
-	tlog.Named("superdns").Debugw("init superdns resolver", "zone", r.Zone, "param", parameter.Param)
+	tlog.Named("superdns").Debugw("init superdns resolver", "resolver", r, "param", parameter.Param)
 	if r.LoadBalancer == nil {
 		r.LoadBalancer = &lb.WRLoadBalancer{}
 	}
-	r.resolver = newResolver(r.Zone, parameter.Param)
+	r.resolver = newResolver(r.Tags, parameter.Param)
 }
 
 func (r *Resolver) clone() *Resolver {
 	r.once.Do(r.init)
 
 	return &Resolver{
-		Zone:             r.Zone,
+		Tags:             r.Tags,
 		LoadBalancer:     r.LoadBalancer,
 		SkipPreloadError: r.SkipPreloadError,
 		resolver:         r.resolver,
@@ -132,7 +107,7 @@ func (r *Resolver) LookupEndpoint(ctx context.Context, domain string, tags map[s
 
 // resolver 服务发现解析程序核心实现
 type resolver struct {
-	zone      Zone                 // 分区信息
+	tags      map[string]string    // 路由标签
 	param     parameter.Parameter  // 解析程序配置参数
 	watcher   *filewatch.Watcher   // 文件订阅程序
 	policy    *routepolicy.Policy  // 路由策略
@@ -141,9 +116,9 @@ type resolver struct {
 }
 
 // newResolver 构造服务发现解析程序核心实现
-func newResolver(zone Zone, param parameter.Parameter) *resolver {
+func newResolver(tags map[string]string, param parameter.Parameter) *resolver {
 	return &resolver{
-		zone:      zone,
+		tags:      tags,
 		param:     param,
 		watcher:   filewatch.NewWatcher(time.Duration(param.WatchInterval) * time.Second),
 		policy:    routepolicy.NewPolicy(),
@@ -189,9 +164,10 @@ func (r *resolver) LookupCluster(ctx context.Context, domain string, tags map[st
 		service: service,
 		route:   route,
 		policy:  r.policy,
-	}).Lookup(ctx, domain, r.zone, tags)
+		tags:    r.tags,
+	}).Lookup(ctx, domain, tags)
 	if err != nil {
-		tlog.Named("superdns").WithContext(ctx).Errorw("lookup", "domain", domain, "zone", r.zone, "tags", tags, "error", err)
+		tlog.Named("superdns").WithContext(ctx).Errorw("lookup", "domain", domain, "tags", tags, "error", err)
 		return model.Cluster{}, err
 	}
 	return c, nil

@@ -13,6 +13,8 @@ github.com/ironzhang/superlib v0.0.0-20230924024159-3416ae82a089 h1:4hnr3AN8TjaZ
 github.com/ironzhang/superlib v0.0.0-20230924024159-3416ae82a089/go.mod h1:LTzipoYEvhAo9Wz2oMLqDhyNPwS/jaZ3miscpcuNfzg=
 github.com/ironzhang/superlib v0.0.0-20230924034611-ece7536b4a41 h1:W0Kodrn2dwDjUjDKyuh0k/PXNPmtQMYqHP/AfdKEBEg=
 github.com/ironzhang/superlib v0.0.0-20230924034611-ece7536b4a41/go.mod h1:LTzipoYEvhAo9Wz2oMLqDhyNPwS/jaZ3miscpcuNfzg=
+github.com/ironzhang/superlib v0.0.0-20240110105052-9aaa6c613462 h1:CJzyrzOuDNjdruV25FYk0iU7jsVf9Vh10iyUjLHimbM=
+github.com/ironzhang/superlib v0.0.0-20240110105052-9aaa6c613462/go.mod h1:LTzipoYEvhAo9Wz2oMLqDhyNPwS/jaZ3miscpcuNfzg=
 github.com/ironzhang/tlog v0.0.0-20230221102626-339a8b110d69 h1:1bWtGDWYIBcDuA5eCTTc2wzNZXJ3go8OiA4W72Ob7M0=
 github.com/ironzhang/tlog v0.0.0-20230221102626-339a8b110d69/go.mod h1:kZqotoXReb+4UFQzMihhaIpu0hBCS3kTIzI8DXX7MHQ=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=

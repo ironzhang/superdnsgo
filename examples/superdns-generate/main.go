@@ -12,7 +12,6 @@ import (
 
 	"github.com/ironzhang/superdnsgo"
 	"github.com/ironzhang/superdnsgo/pkg/model"
-	"github.com/ironzhang/superdnsgo/superdns"
 )
 
 func writeJSON(filename string, v interface{}) error {
@@ -46,8 +45,8 @@ func writeSuperdnsCfg() {
 func writeServiceModel() {
 	m := model.ServiceModel{
 		Domain: "www.superdns.com",
-		Clusters: map[string]model.Cluster{
-			"hna": model.Cluster{
+		Clusters: []model.Cluster{
+			model.Cluster{
 				Name: "hna",
 				Features: map[string]string{
 					"Lidc":        "hna",
@@ -59,7 +58,7 @@ func writeServiceModel() {
 					{Addr: "192.168.1.2:8000", State: model.Enabled, Weight: 100},
 				},
 			},
-			"hnb": model.Cluster{
+			model.Cluster{
 				Name: "hnb",
 				Features: map[string]string{
 					"Lidc":        "hnb",
@@ -71,7 +70,7 @@ func writeServiceModel() {
 					{Addr: "192.168.2.2:8000", State: model.Enabled, Weight: 100},
 				},
 			},
-			"hba@vip": model.Cluster{
+			model.Cluster{
 				Name: "hba@vip",
 				Features: map[string]string{
 					"Lidc":        "hba",
@@ -82,7 +81,7 @@ func writeServiceModel() {
 					{Addr: "127.0.0.1:8000", State: model.Enabled, Weight: 100},
 				},
 			},
-			"default@mock": model.Cluster{
+			model.Cluster{
 				Name: "default@mock",
 				Features: map[string]string{
 					"Lidc":        "default-lidc",
@@ -109,25 +108,7 @@ func writeRouteModel() {
 	m := model.RouteModel{
 		Domain: "www.superdns.com",
 		Strategy: model.RouteStrategy{
-			EnableScriptRoute: false,
-			RouteRules: map[string]model.RouteRule{
-				"product": model.RouteRule{
-					EnableScriptRoute: false,
-					LidcDestinations: map[string][]model.Destination{
-						"hna": []model.Destination{{Cluster: "hna", Percent: 1}},
-						"hnb": []model.Destination{{Cluster: "hnb", Percent: 1}},
-					},
-					RegionDestinations: map[string][]model.Destination{
-						"hn": []model.Destination{
-							{Cluster: "hna", Percent: 0.5},
-							{Cluster: "hnb", Percent: 0.5},
-						},
-					},
-					EnvironmentDestinations: []model.Destination{
-						{Cluster: "hba@vip", Percent: 1},
-					},
-				},
-			},
+			EnableScript: true,
 			DefaultDestinations: []model.Destination{
 				{Cluster: "default@mock", Percent: 1},
 			},
@@ -153,19 +134,17 @@ func writeRouteScript() {
 	tlog.Debugf("write %s success", path)
 }
 
-func writeZone() {
-	z := superdns.Zone{
-		Environment: "product",
-		Region:      "hn",
-		Lidc:        "hna",
-		RouteTags: map[string]string{
-			"Service": "test",
-			"Cluster": "hna-v",
-		},
+func writeTags() {
+	tags := map[string]string{
+		"Environment": "product",
+		"Region":      "hn",
+		"Lidc":        "hna",
+		"Service":     "test",
+		"Cluster":     "hna-v",
 	}
 
-	path := "./superoptions/zone.json"
-	err := writeJSON(path, z)
+	path := "./superoptions/tags.json"
+	err := writeJSON(path, tags)
 	if err != nil {
 		tlog.Errorw("write json", "path", path, "error", err)
 		return
@@ -204,7 +183,7 @@ func main() {
 	writeServiceModel()
 	writeRouteModel()
 	writeRouteScript()
-	writeZone()
+	writeTags()
 	writeMisc()
 	writePreload()
 }

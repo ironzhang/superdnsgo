@@ -22,7 +22,7 @@ func Setup(opts Options) (err error) {
 
 	// 构造服务发现解析程序
 	superdnsResolver = &superdns.Resolver{
-		Zone:             *opts.Zone,
+		Tags:             opts.Tags,
 		LoadBalancer:     opts.LoadBalancer,
 		SkipPreloadError: opts.Misc.SkipPreloadError,
 	}

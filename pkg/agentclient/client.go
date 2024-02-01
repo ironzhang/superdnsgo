@@ -33,11 +33,11 @@ func New(opts Options) *Client {
 }
 
 // SubscribeDomains subscribes the given domains.
-func (p *Client) SubscribeDomains(ctx context.Context, domains []string, ttl time.Duration, waitForReady time.Duration) error {
+func (p *Client) SubscribeDomains(ctx context.Context, domains []string, ttl time.Duration, async bool) error {
 	req := _SubscribeDomainsReq{
 		Domains:      domains,
 		TTL:          timeutil.Duration(ttl),
-		WaitForReady: timeutil.Duration(waitForReady),
+		Asynchronous: async,
 	}
 	return p.hc.Post(ctx, "/superdns/agent/v1/api/subscribe/domains", nil, req, nil)
 }

@@ -28,9 +28,19 @@ func writeFile(filename string, data string) error {
 
 func writeSuperdnsCfg() {
 	param := parameter.Parameter{
-		AgentServer:   "127.0.0.1:1789",
-		ResourcePath:  "/var/superdns",
-		WatchInterval: 1,
+		Agent: parameter.Agent{
+			Server:            "127.0.0.1:1789",
+			SkipError:         false,
+			Timeout:           2,
+			KeepAliveInterval: 10 * 60,
+			SubscribeTTL:      30 * 60,
+			WaitForReady:      200,
+			PreloadForReady:   1000,
+		},
+		Watch: parameter.Watch{
+			ResourcePath:  "/var/superdns",
+			WatchInterval: 1,
+		},
 	}
 
 	path := "superdns.conf"

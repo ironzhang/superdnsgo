@@ -23,11 +23,11 @@ type Options struct {
 	// 预加载域名列表，为 nil 则读取文件 superoptions/preload.json
 	PreloadDomains []string
 
-	// 负载均衡器，为 nil 则使用 lb.WRLoadBalancer
-	LoadBalancer superdns.LoadBalancer
-
 	// 杂项信息，为 nil 则读取文件 superoptions/misc.json
 	Misc *Misc
+
+	// 负载均衡器，为 nil 则使用 lb.WRLoadBalancer
+	LoadBalancer superdns.LoadBalancer
 }
 
 func (p *Options) setupDefaults() (err error) {
@@ -45,15 +45,15 @@ func (p *Options) setupDefaults() (err error) {
 		}
 	}
 
-	if p.LoadBalancer == nil {
-		p.LoadBalancer = &lb.WRLoadBalancer{}
-	}
-
 	if p.Misc == nil {
 		p.Misc, err = readMisc()
 		if err != nil {
 			return fmt.Errorf("read misc: %w", err)
 		}
+	}
+
+	if p.LoadBalancer == nil {
+		p.LoadBalancer = &lb.WRLoadBalancer{}
 	}
 
 	return nil
@@ -71,6 +71,17 @@ func readTags() (map[string]string, error) {
 	return tags, nil
 }
 
+func readPreloadDomains() (domains []string, err error) {
+	const path = "superoptions/preload.json"
+	if fileutil.FileExist(path) {
+		err = fileutil.ReadJSON(path, &domains)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return domains, nil
+}
+
 func readMisc() (*Misc, error) {
 	var misc Misc
 	const path = "superoptions/misc.json"
@@ -81,15 +92,4 @@ func readMisc() (*Misc, error) {
 		}
 	}
 	return &misc, nil
-}
-
-func readPreloadDomains() (domains []string, err error) {
-	const path = "superoptions/preload.json"
-	if fileutil.FileExist(path) {
-		err = fileutil.ReadJSON(path, &domains)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return domains, nil
 }

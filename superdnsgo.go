@@ -28,10 +28,12 @@ func Setup(opts Options) (err error) {
 	}
 
 	// 预加载域名
-	err = superdnsResolver.Preload(context.Background(), opts.PreloadDomains)
-	if err != nil {
-		tlog.Errorw("superdns resolver preload", "domains", opts.PreloadDomains, "error", err)
-		return fmt.Errorf("superdns resolver preload: %w", err)
+	if len(opts.PreloadDomains) > 0 {
+		err = superdnsResolver.Preload(context.Background(), opts.PreloadDomains)
+		if err != nil {
+			tlog.Errorw("superdns resolver preload", "domains", opts.PreloadDomains, "error", err)
+			return fmt.Errorf("superdns resolver preload: %w", err)
+		}
 	}
 	return nil
 }

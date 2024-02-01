@@ -3,6 +3,7 @@ package superdns
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/ironzhang/superlib/filewatch"
 	"github.com/ironzhang/superlib/superutil/parameter"
 
+	"github.com/ironzhang/superdnsgo/pkg/agentclient"
 	"github.com/ironzhang/superdnsgo/pkg/model"
 	"github.com/ironzhang/superdnsgo/superdns/lb"
 	"github.com/ironzhang/superdnsgo/superdns/routepolicy"
@@ -109,6 +111,7 @@ func (r *Resolver) LookupEndpoint(ctx context.Context, domain string, tags map[s
 type resolver struct {
 	tags      map[string]string    // 路由标签
 	param     parameter.Parameter  // 解析程序配置参数
+	agent     *agentclient.Client  // agent 客户端
 	watcher   *filewatch.Watcher   // 文件订阅程序
 	policy    *routepolicy.Policy  // 路由策略
 	mu        sync.Mutex           // 服务提供方映射表互斥锁
@@ -117,13 +120,19 @@ type resolver struct {
 
 // newResolver 构造服务发现解析程序核心实现
 func newResolver(tags map[string]string, param parameter.Parameter) *resolver {
-	return &resolver{
-		tags:      tags,
-		param:     param,
-		watcher:   filewatch.NewWatcher(time.Duration(param.WatchInterval) * time.Second),
+	r := &resolver{
+		tags:  tags,
+		param: param,
+		agent: agentclient.New(agentclient.Options{
+			Addr:    param.Agent.Server,
+			Timeout: time.Duration(param.Agent.Timeout) * time.Second,
+		}),
+		watcher:   filewatch.NewWatcher(time.Duration(param.Watch.WatchInterval) * time.Second),
 		policy:    routepolicy.NewPolicy(),
 		providers: make(map[string]*provider),
 	}
+	go r.running()
+	return r
 }
 
 // Preload 预加载
@@ -173,8 +182,47 @@ func (r *resolver) LookupCluster(ctx context.Context, domain string, tags map[st
 	return c, nil
 }
 
+func (r *resolver) running() {
+	t := time.NewTicker(time.Duration(r.param.Agent.KeepAliveInterval) * time.Second)
+	for {
+		select {
+		case <-t.C:
+			r.keepAlive()
+		}
+	}
+}
+
+func (r *resolver) keepAlive() {
+	domains := r.listProviders()
+
+	// 向 agent 发送订阅域名请求，以保持订阅的心跳
+	err := r.agent.SubscribeDomains(context.Background(), domains, time.Duration(r.param.Agent.SubscribeTTL)*time.Second, 0)
+	if err != nil {
+		tlog.Warnw("keep alive fail", "error", err)
+		return
+	}
+	tlog.Debug("keep alive success")
+}
+
+func (r *resolver) listProviders() []string {
+	var domains []string
+	for domain := range r.providers {
+		domains = append(domains, domain)
+	}
+	return domains
+}
+
 func (r *resolver) watchProviders(ctx context.Context, domains []string) error {
-	// TODO 向 agent 发送订阅域名请求
+	// 向 agent 发送订阅域名请求
+	err := r.agent.SubscribeDomains(ctx, domains,
+		time.Duration(r.param.Agent.SubscribeTTL)*time.Second,
+		time.Duration(r.param.Agent.PreloadForReady)*time.Millisecond)
+	if err != nil {
+		tlog.WithContext(ctx).Warnw("subscribe domains", "domains", domains, "error", err)
+		if !r.param.Agent.SkipError {
+			return err
+		}
+	}
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -196,7 +244,16 @@ func (r *resolver) watchProvider(ctx context.Context, domain string) (*provider,
 		return p, nil
 	}
 
-	// TODO 向 agent 发送订阅域名请求
+	// 向 agent 发送订阅域名请求
+	err := r.agent.SubscribeDomains(ctx, []string{domain},
+		time.Duration(r.param.Agent.SubscribeTTL)*time.Second,
+		time.Duration(r.param.Agent.WaitForReady)*time.Millisecond)
+	if err != nil {
+		tlog.WithContext(ctx).Warnw("subscribe domains", "domain", domain, "error", err)
+		if !r.param.Agent.SkipError {
+			return nil, err
+		}
+	}
 
 	// 构建新的服务提供方
 	return r.loadProvider(ctx, domain), nil
@@ -249,15 +306,18 @@ func (r *resolver) loadProvider(ctx context.Context, domain string) *provider {
 }
 
 func (r *resolver) serviceFilePath(domain string) string {
-	return fmt.Sprintf("%s/services/%s.json", r.param.ResourcePath, domain)
+	filename := fmt.Sprintf("%s.json", domain)
+	return filepath.Join(r.param.Watch.ResourcePath, "services", filename)
 }
 
 func (r *resolver) routeFilePath(domain string) string {
-	return fmt.Sprintf("%s/routes/%s.json", r.param.ResourcePath, domain)
+	filename := fmt.Sprintf("%s.json", domain)
+	return filepath.Join(r.param.Watch.ResourcePath, "routes", filename)
 }
 
 func (r *resolver) routeScriptPath(domain string) string {
-	return fmt.Sprintf("%s/routes/%s.lua", r.param.ResourcePath, domain)
+	filename := fmt.Sprintf("%s.lua", domain)
+	return filepath.Join(r.param.Watch.ResourcePath, "routes", filename)
 }
 
 func (r *resolver) serviceNotLoad(domain string) error {

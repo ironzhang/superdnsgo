@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ironzhang/tlog"
 	"github.com/ironzhang/tlog/iface"
@@ -16,7 +17,8 @@ import (
 )
 
 type options struct {
-	Count    int
+	Forever  bool
+	Interval time.Duration
 	Tags     string
 	LogLevel string
 }
@@ -31,7 +33,8 @@ func (p *options) Setup() {
 		fmt.Fprintf(flag.CommandLine.Output(), "\n")
 	}
 
-	flag.IntVar(&p.Count, "n", 1, "loop count")
+	flag.BoolVar(&p.Forever, "forever", false, "loop forever")
+	flag.DurationVar(&p.Interval, "interval", time.Second, "loop interval")
 	flag.StringVar(&p.Tags, "tags", "", "route tags")
 	flag.StringVar(&p.LogLevel, "log-level", "fatal", "log level")
 	flag.Parse()
@@ -81,6 +84,17 @@ func printEndpoint(domain string, cluster string, endpoint model.Endpoint) {
 	fmt.Printf("\n")
 }
 
+func doLookup(tags map[string]string) {
+	for _, domain := range flag.Args() {
+		endpoint, cluster, err := superdnsgo.LookupEndpoint(context.Background(), domain, tags)
+		if err != nil {
+			printError(domain, err)
+		} else {
+			printEndpoint(domain, cluster, endpoint)
+		}
+	}
+}
+
 func main() {
 	var opts options
 	opts.Setup()
@@ -98,14 +112,13 @@ func main() {
 		return
 	}
 
-	for i := 0; i < opts.Count; i++ {
-		for _, domain := range flag.Args() {
-			endpoint, cluster, err := superdnsgo.LookupEndpoint(context.Background(), domain, tags)
-			if err != nil {
-				printError(domain, err)
-			} else {
-				printEndpoint(domain, cluster, endpoint)
-			}
-		}
+	if !opts.Forever {
+		doLookup(tags)
+		return
+	}
+
+	for {
+		doLookup(tags)
+		time.Sleep(opts.Interval)
 	}
 }

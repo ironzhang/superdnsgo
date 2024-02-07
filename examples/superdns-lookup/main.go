@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"github.com/ironzhang/tlog/iface"
 
 	"github.com/ironzhang/superdnsgo"
-	"github.com/ironzhang/superdnsgo/pkg/model"
 )
 
 type options struct {
@@ -76,21 +74,20 @@ func printError(domain string, err error) {
 	fmt.Printf("\n")
 }
 
-func printEndpoint(domain string, cluster string, endpoint model.Endpoint) {
-	data, _ := json.Marshal(endpoint)
+func printAddress(domain string, cluster string, addr string) {
 	fmt.Printf("domain: %s\n", domain)
 	fmt.Printf("cluster: %s\n", cluster)
-	fmt.Printf("endpoint: %s\n", data)
+	fmt.Printf("address: %s\n", addr)
 	fmt.Printf("\n")
 }
 
 func doLookup(tags map[string]string) {
 	for _, domain := range flag.Args() {
-		endpoint, cluster, err := superdnsgo.LookupEndpoint(context.Background(), domain, tags)
+		addr, cluster, err := superdnsgo.Lookup(context.Background(), domain, tags)
 		if err != nil {
 			printError(domain, err)
 		} else {
-			printEndpoint(domain, cluster, endpoint)
+			printAddress(domain, cluster, addr)
 		}
 	}
 }

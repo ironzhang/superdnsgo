@@ -6,7 +6,6 @@ import (
 
 	"github.com/ironzhang/tlog"
 
-	"github.com/ironzhang/superdnsgo/pkg/model"
 	"github.com/ironzhang/superdnsgo/superdns"
 )
 
@@ -48,7 +47,7 @@ func WithLoadBalancer(lb superdns.LoadBalancer) *superdns.Resolver {
 	return superdnsResolver.WithLoadBalancer(lb)
 }
 
-// LookupEndpoint 查找地址节点
-func LookupEndpoint(ctx context.Context, domain string, tags map[string]string) (endpoint model.Endpoint, cluster string, err error) {
-	return superdnsResolver.LookupEndpoint(ctx, domain, tags)
+// Lookup 查找地址节点
+func Lookup(ctx context.Context, domain string, tags map[string]string) (addr, cluster string, err error) {
+	return superdnsResolver.Lookup(ctx, domain, tags)
 }

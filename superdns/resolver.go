@@ -86,21 +86,21 @@ func (r *Resolver) Preload(ctx context.Context, domains []string) error {
 	return nil
 }
 
-// LookupEndpoint 查找地址节点
-func (r *Resolver) LookupEndpoint(ctx context.Context, domain string, tags map[string]string) (model.Endpoint, string, error) {
+// Lookup 查找地址节点
+func (r *Resolver) Lookup(ctx context.Context, domain string, tags map[string]string) (addr, cluster string, err error) {
 	r.once.Do(r.init)
 
 	c, err := r.resolver.LookupCluster(ctx, domain, tags)
 	if err != nil {
 		tlog.Named("superdns").WithContext(ctx).Errorw("lookup cluster", "domain", domain, "tags", tags, "error", err)
-		return model.Endpoint{}, "", err
+		return "", "", err
 	}
 	ep, err := r.LoadBalancer.Pickup(domain, c.Name, c.Endpoints)
 	if err != nil {
 		tlog.Named("superdns").WithContext(ctx).Errorw("load balancer pickup", "domain", domain, "cluster", c.Name, "error", err)
-		return model.Endpoint{}, "", err
+		return "", "", err
 	}
-	return ep, c.Name, nil
+	return ep.Addr, c.Name, nil
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

@@ -14,10 +14,10 @@ func main() {
 		return
 	}
 
-	endpoint, cluster, err := superdnsgo.LookupEndpoint(context.Background(), "www.superdns.com", nil)
+	addr, cluster, err := superdnsgo.Lookup(context.Background(), "www.superdns.com", nil)
 	if err != nil {
 		fmt.Printf("superdnsgo lookup endpoint: %v\n", err)
 		return
 	}
-	fmt.Printf("cluster=%s, endpoint=%v\n", cluster, endpoint)
+	fmt.Printf("cluster=%s, address=%v\n", cluster, addr)
 }
